@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Adeotek.SqlDependencyListener</AssemblyName>
+    <PackageId>Adeotek.SqlDependencyListener</PackageId>
+    <PackageTags>sqldependency,sqlserver</PackageTags>
+    <Title>Adeotek.SqlDependencyListener</Title>
+    <Description>Simple System.Data.SqlClient.SqlDependency listener</Description>
+    <Product>AdeoTEK SqlDependencyListener</Product>
+    <Company>AdeoTEK Software SRL</Company>
+    <Authors>George Benjamin-Schonberger</Authors>
+    <Copyright>Copyright © AdeoTEK Software SRL 2021</Copyright>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <FileVersion>1.0.0.1</FileVersion>
+    <Version>1.0.0</Version>
+    <PackageProjectUrl>https://github.com/adeotek/DotNet.SqlDependencyListener/</PackageProjectUrl>
+    <PackageLicense>https://github.com/adeotek/DotNet.SqlDependencyListener/blob/master/README.md</PackageLicense>
+    <RepositoryUrl>https://github.com/adeotek/DotNet.SqlDependencyListener/</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <PackageIcon>PackageIcon.png</PackageIcon>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageVersion>1.0.0</PackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="System.Text.Json" Version="5.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>/</PackagePath>
+    </None>
+    <None Include="../assets/PackageIcon.png">
+      <Pack>True</Pack>
+      <PackagePath>/</PackagePath>
+    </None>
+  </ItemGroup>
+</Project>

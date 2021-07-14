@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31424.327
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adeotek.SqlDependencyListener", "src\Adeotek.SqlDependencyListener.csproj", "{1C545A02-520C-44B7-BF8D-7F1E566A99B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adeotek.SqlDependencyListener.Sample", "sample\Adeotek.SqlDependencyListener.Sample.csproj", "{5AF3A38C-97E4-4468-AA23-BC4507966E67}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1C545A02-520C-44B7-BF8D-7F1E566A99B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C545A02-520C-44B7-BF8D-7F1E566A99B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C545A02-520C-44B7-BF8D-7F1E566A99B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C545A02-520C-44B7-BF8D-7F1E566A99B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AF3A38C-97E4-4468-AA23-BC4507966E67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AF3A38C-97E4-4468-AA23-BC4507966E67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AF3A38C-97E4-4468-AA23-BC4507966E67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AF3A38C-97E4-4468-AA23-BC4507966E67}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FB6B8767-4470-4C50-AFEB-98B1713874E4}
+	EndGlobalSection
+EndGlobal
