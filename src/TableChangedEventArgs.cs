@@ -12,18 +12,20 @@ namespace Adeotek.SqlDependencyListener
         {
             Message = notificationMessage;
 
-            if (Message is T message)
+            if (notificationMessage is T message)
             {
                 Data = message;
             }
-
-            try
+            else
             {
-                Data = string.IsNullOrEmpty(Message) ? default : JsonSerializer.Deserialize<T>(Message);
-            }
-            catch (Exception)
-            {
-                Data = default;
+                try
+                {
+                    Data = string.IsNullOrEmpty(Message) ? default : JsonSerializer.Deserialize<T>(Message);
+                }
+                catch (Exception)
+                {
+                    Data = default;
+                }
             }
         }
     }
