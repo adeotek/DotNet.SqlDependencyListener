@@ -9,11 +9,11 @@ Simple System.Data.SqlClient.SqlDependency listener implementation
 The Adeotek.SqlDependencyListener NuGet [package can be found here](https://www.nuget.org/packages/Adeotek.SqlDependencyListener/). Alternatively you can install it via one of the following commands below:
 
 NuGet command:
-```bash
+```powershell
 Install-Package Adeotek.SqlDependencyListener
 ```
 .NET Core CLI:
-```bash
+```powershell
 dotnet add package Adeotek.SqlDependencyListener
 ```
 
