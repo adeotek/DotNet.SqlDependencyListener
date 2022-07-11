@@ -20,7 +20,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Package
-      run: dotnet pack --no-build --configuration Release src/Adeotek.SqlDependencyListener.csproj --output .
+      run: dotnet pack --no-build src/Adeotek.SqlDependencyListener.csproj --output .
     - uses: bbonkr/get-version-action@v1.0.4
       id: get_version
       with:
