@@ -19,5 +19,10 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+    - uses: bbonkr/get-version-action@v1.0.4
+      id: get_version
+      with:
+        project: "src/Adeotek.SqlDependencyListener.csproj"
+    - name: logging
+      run: |
+        echo "Version=${{steps.get_version.outputs.version}}"
