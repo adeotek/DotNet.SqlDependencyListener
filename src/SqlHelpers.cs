@@ -4,78 +4,74 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using System.Linq;
 
-namespace Adeotek.SqlDependencyListener
+namespace Adeotek.SqlDependencyListener;
+
+public static class SqlHelpers
 {
-    public static class SqlHelpers
+    #region Static methods
+    public static void ExecuteNonQuery(string commandText, string connectionString)
     {
-        #region Static methods
-        public static void ExecuteNonQuery(string commandText, string connectionString)
+        using var conn = new SqlConnection(connectionString);
+        using var command = new SqlCommand(commandText, conn);
+        conn.Open();
+        command.CommandType = CommandType.Text;
+        command.ExecuteNonQuery();
+    }
+
+    public static int[] GetDependencyDbIdentities(string connectionString, string database, string databaseObjectsPrefix)
+    {
+        if (connectionString == null)
         {
-            using (var conn = new SqlConnection(connectionString))
+            throw new ArgumentNullException(nameof(connectionString));
+        }
+
+        if (database == null)
+        {
+            throw new ArgumentNullException(nameof(database));
+        }
+
+        var result = new List<string>();
+
+        using (var connection = new SqlConnection(connectionString))
+        using (var command = connection.CreateCommand())
+        {
+            connection.Open();
+            command.CommandText = string.Format(GetDependencyIdentities, database, databaseObjectsPrefix);
+            command.CommandType = CommandType.Text;
+            using (var reader = command.ExecuteReader())
             {
-                using (var command = new SqlCommand(commandText, conn))
+                while (reader.Read())
                 {
-                    conn.Open();
-                    command.CommandType = CommandType.Text;
-                    command.ExecuteNonQuery();
+                    result.Add(reader.GetString(0));
                 }
             }
         }
 
-        public static int[] GetDependencyDbIdentities(string connectionString, string database, string databaseObjectsPrefix)
-        {
-            if (connectionString == null)
-            {
-                throw new ArgumentNullException(nameof(connectionString));
-            }
+        return result.Select(p => int.TryParse(p, out var temp) ? temp : -1)
+            .Where(p => p != -1)
+            .ToArray();
+    }
 
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
+    public static void CleanDatabase(string connectionString, string database, string installProcedureName, string uninstallProcedureName)
+    {
+        var cleanupScript = string.Format(
+            ForcedDatabaseCleaning,
+            database,
+            installProcedureName,
+            uninstallProcedureName);
+        ExecuteNonQuery(cleanupScript, connectionString);
+    }
+    #endregion
 
-            var result = new List<string>();
-
-            using (var connection = new SqlConnection(connectionString))
-            using (var command = connection.CreateCommand())
-            {
-                connection.Open();
-                command.CommandText = string.Format(GetDependencyIdentities, database, databaseObjectsPrefix);
-                command.CommandType = CommandType.Text;
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        result.Add(reader.GetString(0));
-                    }
-                }
-            }
-
-            return result.Select(p => int.TryParse(p, out var temp) ? temp : -1)
-                .Where(p => p != -1)
-                .ToArray();
-        }
-
-        public static void CleanDatabase(string connectionString, string database, string installProcedureName, string uninstallProcedureName)
-        {
-            var cleanupScript = string.Format(
-                ForcedDatabaseCleaning,
-                database,
-                installProcedureName,
-                uninstallProcedureName);
-            ExecuteNonQuery(cleanupScript, connectionString);
-        }
-        #endregion
-
-        #region Listener
-        /// <summary>
-        /// T-SQL script-template which helps to receive changed data in monitored table.
-        /// {0} - database name.
-        /// {1} - conversation queue name.
-        /// {2} - timeout.
-        /// {3} - schema name.
-        /// </summary>
-        public const string ReceiveEvent = @"DECLARE @conversationHandle UNIQUEIDENTIFIER
+    #region Listener
+    /// <summary>
+    /// T-SQL script-template which helps to receive changed data in monitored table.
+    /// {0} - database name.
+    /// {1} - conversation queue name.
+    /// {2} - timeout.
+    /// {3} - schema name.
+    /// </summary>
+    public const string ReceiveEvent = @"DECLARE @conversationHandle UNIQUEIDENTIFIER
 DECLARE @message VARBINARY(MAX)
 USE [{0}]
 WAITFOR (
@@ -88,14 +84,14 @@ BEGIN CATCH
 END CATCH
 SELECT CAST(@message AS NVARCHAR(MAX))
 ";
-        #endregion
+    #endregion
 
-        #region Conversation
-        /// <summary>
-        /// T-SQL script-template which enables ServiceBroker, if not enabled.
-        /// {0} - database name;
-        /// </summary>
-        public const string EnableServiceBroker = @"IF EXISTS (SELECT * FROM sys.databases WHERE name = '{0}' AND is_broker_enabled = 0)
+    #region Conversation
+    /// <summary>
+    /// T-SQL script-template which enables ServiceBroker, if not enabled.
+    /// {0} - database name;
+    /// </summary>
+    public const string EnableServiceBroker = @"IF EXISTS (SELECT * FROM sys.databases WHERE name = '{0}' AND is_broker_enabled = 0)
     BEGIN
         -- Setup Service Broker
         ALTER DATABASE [{0}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE
@@ -106,14 +102,14 @@ SELECT CAST(@message AS NVARCHAR(MAX))
     END
 ";
 
-        /// <summary>
-        /// T-SQL script-template which prepares database for ServiceBroker notification.
-        /// {0} - database name;
-        /// {1} - conversation queue name.
-        /// {2} - conversation service name.
-        /// {3} - schema name.
-        /// </summary>
-        public const string CreateConversationObjects = @"IF (EXISTS (SELECT * FROM sys.databases WHERE name = '{0}' AND is_broker_enabled = 0))
+    /// <summary>
+    /// T-SQL script-template which prepares database for ServiceBroker notification.
+    /// {0} - database name;
+    /// {1} - conversation queue name.
+    /// {2} - conversation service name.
+    /// {3} - schema name.
+    /// </summary>
+    public const string CreateConversationObjects = @"IF (EXISTS (SELECT * FROM sys.databases WHERE name = '{0}' AND is_broker_enabled = 0))
     BEGIN
         RAISERROR ('ServiceBroker is disabled for database [{0}]', 16, 1)
     END
@@ -125,13 +121,13 @@ SELECT CAST(@message AS NVARCHAR(MAX))
         CREATE SERVICE [{2}] ON QUEUE [{3}].[{1}] ([DEFAULT])
 ";
 
-        /// <summary>
-        /// T-SQL script-template which removes database notification.
-        /// {0} - conversation queue name.
-        /// {1} - conversation service name.
-        /// {2} - schema name.
-        /// </summary>
-        public const string DropConversationObjects = @"DECLARE @serviceId INT
+    /// <summary>
+    /// T-SQL script-template which removes database notification.
+    /// {0} - conversation queue name.
+    /// {1} - conversation service name.
+    /// {2} - schema name.
+    /// </summary>
+    public const string DropConversationObjects = @"DECLARE @serviceId INT
     SELECT @serviceId = service_id FROM sys.services WHERE sys.services.name = '{1}'
     DECLARE @ConversationHandle uniqueidentifier
     DECLARE Conversations CURSOR FOR
@@ -153,25 +149,25 @@ SELECT CAST(@message AS NVARCHAR(MAX))
     IF (OBJECT_ID ('{2}.{0}', 'SQ') IS NOT NULL)
 	    DROP QUEUE [{2}].[{0}];
 ";
-        #endregion
+    #endregion
 
-        #region Trigger
-        /// <summary>
-        /// T-SQL script-template which creates notification trigger.
-        /// {0} - trigger name.
-        /// {1} - schema name.
-        /// </summary>
-        public const string CheckTrigger = @"IF (OBJECT_ID ('{1}.{0}', 'TR') IS NOT NULL) RETURN;";
+    #region Trigger
+    /// <summary>
+    /// T-SQL script-template which creates notification trigger.
+    /// {0} - trigger name.
+    /// {1} - schema name.
+    /// </summary>
+    public const string CheckTrigger = @"IF (OBJECT_ID ('{1}.{0}', 'TR') IS NOT NULL) RETURN;";
 
-        /// <summary>
-        /// T-SQL script-template which creates notification trigger.
-        /// {0} - monitored table name.
-        /// {1} - trigger name.
-        /// {2} - trigger type (INSERT, DELETE, UPDATE...).
-        /// {3} - conversation service name.
-        /// {4} - schema name.
-        /// </summary>
-        public const string CreateTrigger = @"CREATE OR ALTER TRIGGER [{4}].[{1}]
+    /// <summary>
+    /// T-SQL script-template which creates notification trigger.
+    /// {0} - monitored table name.
+    /// {1} - trigger name.
+    /// {2} - trigger type (INSERT, DELETE, UPDATE...).
+    /// {3} - conversation service name.
+    /// {4} - schema name.
+    /// </summary>
+    public const string CreateTrigger = @"CREATE OR ALTER TRIGGER [{4}].[{1}]
     ON [{4}].[{0}]
     FOR {2}
 AS
@@ -230,26 +226,26 @@ BEGIN
 END
 ";
 
-        /// <summary>
-        /// T-SQL script-template which creates notification trigger.
-        /// {0} - notification trigger name.
-        /// {1} - schema name.
-        /// </summary>
-        public const string DropTrigger = @"IF (OBJECT_ID ('{1}.{0}', 'TR') IS NOT NULL) DROP TRIGGER [{1}].[{0}];";
-        #endregion
+    /// <summary>
+    /// T-SQL script-template which creates notification trigger.
+    /// {0} - notification trigger name.
+    /// {1} - schema name.
+    /// </summary>
+    public const string DropTrigger = @"IF (OBJECT_ID ('{1}.{0}', 'TR') IS NOT NULL) DROP TRIGGER [{1}].[{0}];";
+    #endregion
 
-        #region Stored procedures
-        /// <summary>
-        /// T-SQL script-template which creates notification setup procedure.
-        /// {0} - database name.
-        /// {1} - setup procedure name.
-        /// {2} - service broker enable statement.
-        /// {3} - service broker configuration statement.
-        /// {4} - notification trigger check statement.
-        /// {5} - notification trigger configuration statement.
-        /// {6} - schema name.
-        /// </summary>
-        public const string CreateInstallationProcedure = @"USE [{0}]
+    #region Stored procedures
+    /// <summary>
+    /// T-SQL script-template which creates notification setup procedure.
+    /// {0} - database name.
+    /// {1} - setup procedure name.
+    /// {2} - service broker enable statement.
+    /// {3} - service broker configuration statement.
+    /// {4} - notification trigger check statement.
+    /// {5} - notification trigger configuration statement.
+    /// {6} - schema name.
+    /// </summary>
+    public const string CreateInstallationProcedure = @"USE [{0}]
 " + PermissionsInfo + @"
 IF (OBJECT_ID ('{6}.{1}', 'P') IS NULL)
 BEGIN
@@ -267,16 +263,16 @@ END')
 END
 ";
 
-        /// <summary>
-        /// T-SQL script-template which creates notification uninstall procedure.
-        /// {0} - database name.
-        /// {1} - uninstall procedure name.
-        /// {2} - notification trigger drop statement.
-        /// {3} - service broker uninstall statement.
-        /// {4} - schema name.
-        /// {5} - install procedure name.
-        /// </summary>
-        public const string CreateUninstallationProcedure = @"USE [{0}]
+    /// <summary>
+    /// T-SQL script-template which creates notification uninstall procedure.
+    /// {0} - database name.
+    /// {1} - uninstall procedure name.
+    /// {2} - notification trigger drop statement.
+    /// {3} - service broker uninstall statement.
+    /// {4} - schema name.
+    /// {5} - install procedure name.
+    /// </summary>
+    public const string CreateUninstallationProcedure = @"USE [{0}]
 " + PermissionsInfo + @"
 IF (OBJECT_ID ('{4}.{1}', 'P') IS NULL)
 BEGIN
@@ -294,21 +290,21 @@ BEGIN
 END')
 END
 ";
-        #endregion
+    #endregion
 
-        #region Helpers
-        /// <summary>
-        /// T-SQL script-template which executes stored procedure.
-        /// {0} - database name.
-        /// {1} - procedure name.
-        /// {2} - schema name.
-        /// </summary>
-        public const string ExecuteProcedure = @"USE [{0}]
+    #region Helpers
+    /// <summary>
+    /// T-SQL script-template which executes stored procedure.
+    /// {0} - database name.
+    /// {1} - procedure name.
+    /// {2} - schema name.
+    /// </summary>
+    public const string ExecuteProcedure = @"USE [{0}]
 IF (OBJECT_ID ('{2}.{1}', 'P') IS NOT NULL)
     EXEC [{2}].[{1}]
 ";
 
-        public const string PermissionsInfo = @"DECLARE @msg NVARCHAR(MAX)
+    public const string PermissionsInfo = @"DECLARE @msg NVARCHAR(MAX)
 DECLARE @crlf NCHAR(1)
 SET @crlf = NCHAR(10)
 SET @msg = 'Current user must have following permissions: '
@@ -324,24 +320,24 @@ SET @msg = @msg + 'GRANT CONTROL ON SCHEMA::[<schemaname>] TO [<username>];'
 PRINT @msg
 ";
 
-        /// <summary>
-        /// T-SQL script-template which returns all dependency identities in the database.
-        /// {0} - database name.
-        /// {1} - database objects prefix
-        /// </summary>
-        public const string GetDependencyIdentities = @"USE [{0}]
+    /// <summary>
+    /// T-SQL script-template which returns all dependency identities in the database.
+    /// {0} - database name.
+    /// {1} - database objects prefix
+    /// </summary>
+    public const string GetDependencyIdentities = @"USE [{0}]
 SELECT REPLACE(name, '{1}' , '')
     FROM sys.services
     WHERE [name] like '{1}%';
 ";
 
-        /// <summary>
-        /// T-SQL script-template which cleans database from notifications.
-        /// {0} - database name.
-        /// {1} - uninstall procedure prefix
-        /// {2} - install procedure prefix
-        /// </summary>
-        public const string ForcedDatabaseCleaning = @"USE [{0}]
+    /// <summary>
+    /// T-SQL script-template which cleans database from notifications.
+    /// {0} - database name.
+    /// {1} - uninstall procedure prefix
+    /// {2} - install procedure prefix
+    /// </summary>
+    public const string ForcedDatabaseCleaning = @"USE [{0}]
 DECLARE @DB_NAME VARCHAR(255)
 SET @DB_NAME = '{0}'
 DECLARE @PROC_NAME VARCHAR(255)
@@ -376,6 +372,5 @@ END
 CLOSE procedures;
 DEALLOCATE procedures;
 ";
-        #endregion
-    }
+    #endregion
 }
