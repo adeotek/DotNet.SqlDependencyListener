@@ -1,31 +1,30 @@
 ﻿using System;
 using System.Text.Json;
 
-namespace Adeotek.SqlDependencyListener
+namespace Adeotek.SqlDependencyListener;
+
+public class TableChangedEventArgs<T> : EventArgs
 {
-    public class TableChangedEventArgs<T> : EventArgs
+    public string? Message { get; }
+    public T? Data { get; }
+
+    public TableChangedEventArgs(string notificationMessage)
     {
-        public string Message { get; }
-        public T Data { get; }
+        Message = notificationMessage;
 
-        public TableChangedEventArgs(string notificationMessage)
+        if (notificationMessage is T message)
         {
-            Message = notificationMessage;
-
-            if (notificationMessage is T message)
+            Data = message;
+        }
+        else
+        {
+            try
             {
-                Data = message;
+                Data = string.IsNullOrEmpty(Message) ? default : JsonSerializer.Deserialize<T>(Message);
             }
-            else
+            catch (Exception)
             {
-                try
-                {
-                    Data = string.IsNullOrEmpty(Message) ? default : JsonSerializer.Deserialize<T>(Message);
-                }
-                catch (Exception)
-                {
-                    Data = default;
-                }
+                Data = default;
             }
         }
     }
